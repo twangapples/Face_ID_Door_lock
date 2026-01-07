@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.capture import capture_user_photos
-from app.recognizer import encode_face
+from app.recognizer import InsightFaceRecognizer, encode_face
 from app.db import add_user_encodings
 
 
@@ -19,6 +19,16 @@ def main():
     username = input("Enter username: ").strip()
     if not username:
         print("Error: Username cannot be empty")
+        return
+    
+    # Initialize InsightFace recognizer
+    print("\nInitializing InsightFace recognizer...")
+    try:
+        recognizer = InsightFaceRecognizer(ctx_id=-1)  # CPU mode
+        recognizer.prepare()
+        print("✓ InsightFace ready")
+    except Exception as e:
+        print(f"Error: Failed to initialize InsightFace: {e}")
         return
     
     # Capture photos
@@ -33,15 +43,16 @@ def main():
         print("Error: No photos captured")
         return
     
-    # Generate encodings from captured images
+    # Generate encodings from captured images using InsightFace
     print(f"\nGenerating face encodings from {len(image_paths)} image(s)...")
     encodings = []
     
     for img_path in image_paths:
-        encoding = encode_face(img_path)
+        # Use InsightFace to encode
+        encoding = encode_face(img_path, recognizer=recognizer)
         if encoding is not None:
             encodings.append(encoding)
-            print(f"  ✓ Encoded: {img_path}")
+            print(f"  ✓ Encoded: {img_path} (shape: {encoding.shape})")
         else:
             print(f"  ✗ No face found in: {img_path}")
     
@@ -52,8 +63,8 @@ def main():
     # Save encodings to database
     print(f"\nSaving {len(encodings)} encoding(s) to database...")
     try:
-        add_user_encodings(username, encodings)
-        print(f"✓ User '{username}' enrolled successfully!")
+        add_user_encodings(username, encodings, face_images=image_paths)
+        print(f"✓ User '{username}' enrolled successfully with {len(encodings)} encoding(s)!")
     except Exception as e:
         print(f"Error saving encodings: {e}")
         return
@@ -61,4 +72,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
