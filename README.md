@@ -1,4 +1,4 @@
-:# Secure Face Recognition System
+# Secure Face Recognition System
 
 A secure face recognition system with anti-spoofing protection. Features InsightFace 512-D embeddings and ML-based liveness detection.
 
